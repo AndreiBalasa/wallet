@@ -1,0 +1,70 @@
+Endpoint:
+http://wallet.local:8080/test/launch 
+In Data: 
+{
+    "user_id":1,
+    "game_id":23
+}
+Out Data:
+On success:
+{
+    "success": 1,
+    "token": xxx,
+}
+On fail:
+{
+    "success": 0,
+    "message": "De ce a crapat"
+}
+Process:
+- pe baza user si game ID genereaza un token unique one time use valid timp de 5 minute si retunreaza-l
+
+
+Endpoint:
+http://wallet.local:8080/test/init
+In Data: 
+{
+    "token":xxxx,
+    "user_id": 1
+}
+Out Data:
+On success:
+{
+    "success": 1,
+    "session_id": xxx,
+}
+On fail:
+{
+    "success": 0,
+    "message": "De ce a crapat"
+}
+Process:
+- verifica token-ul, a mai fost folosit? apartine user-ului? e expirat? Daca totul e ok creeaza o sessiune pe baza lui, marcheaza-l ca expirat si returneaza session_id 
+
+
+Endpoint:
+http://wallet.local:8080/test/balance
+In Data: 
+{
+    "session_id":1,
+}
+Out Data:
+On success:
+{
+    "success": 1,
+    "balance": 100,
+}
+On fail:
+{
+    "success": 0,
+    "message": "De ce a crapat"
+}
+Process:
+- Verifica daca sesinuea exista si e inca activa, se verifica daca player-ul atasat sesiuni exista, se verifica daca jocul atasat sesiuni exista daca totul e ok, returneaza balanta
+
+Session_id creeat din Token_id care este creeat folosind User_id si Game_id
+
+Users -> id, username, balance
+Games -> id, identifier ("fire-jocker")
+Tokens -> id, user_id, game_id, creation_date, use_date, used (0|1) available 5 minutes
+Sessions -> id, token_id, creation_date, status (0 active|1 closed)
