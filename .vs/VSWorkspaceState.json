@@ -3,9 +3,12 @@
     "",
     "\\app",
     "\\app\\controllers",
+    "\\app\\library",
+    "\\app\\models",
+    "\\app\\views",
     "\\app\\views\\user",
-    "\\cache"
+    "\\cache",
+    "\\public"
   ],
-  "SelectedNode": "\\app\\controllers\\UserController.php",
   "PreviewInSolutionExplorer": false
 }

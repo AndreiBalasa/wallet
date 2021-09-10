@@ -49,7 +49,7 @@ class Users extends \Phalcon\Mvc\Model
 
     public function setBalance($balance)
     {
-        $this->$balance = $balance;
+        $this->balance = $balance;
 
         return $this;
     }
