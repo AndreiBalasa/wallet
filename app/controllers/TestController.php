@@ -76,15 +76,18 @@ class TestController extends ControllerBase
                    $timp = new DateTime('Europe/Bucharest');
                    if($tokenData->getExpDate() < $timp->format('H:i:s'))
                    {
-                         
+                          // daca a expirat timpul, setam tokenul ca si folosit si trimitem o eroare
                           $tokenData->setUsed(1);
                           $tokenData->save();
                           $response->setError('Token expirat');                   
                    }
                    else
                    {
+                    //tokenul e setata ca si available
                     $tokenData->setUsed(0);
                     $tokenData->save();
+
+                    var_dump($tokenData->getToken());
                    }
                    
 
@@ -104,7 +107,7 @@ class TestController extends ControllerBase
         $user_id = $action['user_id'];
        
 
-        $tokenData = Tokens::FindFirst(["user_id = {$user_id}"]);
+        $tokenData = Tokens::FindFirst(["user_id = {$user_id}"]);  // caut tokenul in functie de user_id
         
         
         if( !($tokenData) ){
@@ -112,30 +115,37 @@ class TestController extends ControllerBase
         }else {
             $tokenId = $tokenData->getId();
            
-           $sessionData = Sesiune::FindFirst(["token_id = {$tokenId}"]);    
+           $sessionData = Sesiune::FindFirst(["token_id = {$tokenId}"]);     
             
 
-            if( !($sessionData) &&  ($tokenData->getUsed() == 0) ){
-            
-               $sesiune = new Sesiune();
-               $timpul = new DateTime('Europe/Bucharest');
+            if( !($sessionData)){   ///daca sesiunea nu exista creeam una noua
+               if(($tokenData->getUsed() == 0)){  //daca tokenul este valid 
+                    $sesiune = new Sesiune();
+                    $timpul = new DateTime('Europe/Bucharest');
 
-               $sesiune->setTokenId($tokenId);
-               $sesiune->setStatus(1);
-               $sesiune->setCurrDate( $timpul->format('H:i:s'));
+                    $sesiune->setTokenId($tokenId);
+                    $sesiune->setStatus(1);
+                    $sesiune->setCurrDate( $timpul->format('H:i:s'));
 
-               $sesiune->save();
+                    $sesiune->save();
 
-               $tokenData->setUsed(1);
-               $tokenData->save();
+                    $tokenData->setUsed(1);
+                    $tokenData->save();
 
-               //dupa ce salvez in database creez o sesiune cu datele respective
-               $sessionData = Sesiune::FindFirst(["token_id = {$tokenId}"]);     
+                    //dupa ce salvez in database creez o sesiune cu datele respective
+                    $sessionData = Sesiune::FindFirst(["token_id = {$tokenId}"]);     
 
-               $this->session->set('ID', $sessionData->getId());
-               $this->session->set('Status', $sessionData->getStatus());
-               $this->session->set('TokenId', $sessionData->getTokenId());
-              
+                    $this->session->set('ID', $sessionData->getId());
+                    $this->session->set('Status', $sessionData->getStatus());
+                    $this->session->set('TokenId', $sessionData->getTokenId());
+
+                    var_dump("Sesion id:");
+                    var_dump($this->session->get('ID'));
+                    var_dump("Token id:");
+                    var_dump($this->session->get('TokenId'));
+               }else{
+                    $response->setError('Token Expirat');
+               }
             }else
             {
                 //sterg datele din sesiunea veche
@@ -150,6 +160,12 @@ class TestController extends ControllerBase
                     $this->session->set('ID', $sessionData->getId());
                     $this->session->set('Status', $sessionData->getStatus());
                     $this->session->set('TokenId', $sessionData->getTokenId());
+
+                    var_dump("Sesion id:");
+                    var_dump($this->session->get('ID'));
+                    var_dump("Token id:");
+                    var_dump($this->session->get('TokenId'));
+
                 }else
                 {
 
@@ -161,6 +177,7 @@ class TestController extends ControllerBase
 
         }
     
+        $response->sendResponse();
 
     }
 
@@ -170,14 +187,14 @@ class TestController extends ControllerBase
         $response = new App\Library\WalletResponse();
         $action = json_decode($this->request->getRawBody(), true);
         $ballance_value = $action['balance'];
-       
-     
-        $sessionData = Sesiune::FindFirst(["id = {$this->session->get('ID')}"]);    
-     
-
+        $sessionData = new Sesiune();
         
-     
-   
+        try{
+            $sessionData = Sesiune::FindFirst(["id = {$this->session->get('ID')}"]);   
+        }catch(\Exception $e){
+            var_dump("Sesiunea a fost distrusa");
+        }
+        
 
         if(! ($sessionData) )
         {
@@ -197,7 +214,7 @@ class TestController extends ControllerBase
 
                     if($userData)
                     {
-                        if( $gameData )
+                        if($gameData)
                         {
                             $userData->setBalance($ballance_value);
                             $userData->save();
@@ -209,6 +226,10 @@ class TestController extends ControllerBase
 
                             var_dump($Game);
                             var_dump($Balance);
+
+                            $sessionData->setStatus(0);
+                            $sessionData->save();
+                            $this->session->destroy();
 
                         }else{
 
@@ -228,6 +249,8 @@ class TestController extends ControllerBase
 
         }
         
+        $response->sendResponse();
+
     }
 
     
