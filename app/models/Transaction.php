@@ -14,7 +14,7 @@ class Transaction extends \Phalcon\Mvc\Model
     
     protected $type;
 
-    public function setSession($type)
+    public function setType($type)
     {
         $this->type = $type;
 

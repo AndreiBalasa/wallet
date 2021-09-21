@@ -386,6 +386,148 @@ class TestController extends ControllerBase
 
 
 
+    public function winAction(){
+
+        $response = new App\Library\WalletResponse();
+        $action = json_decode($this->request->getRawBody(), true);
+        $session_id = $action['session_id'];
+        $round_id = $action['round_id'];
+        $transaction_id = $action['transaction_id'];
+        $amount = $action['amount'];
+
+        $sessionData = Sesiune::FindFirst(["id = {$session_id}"]);   
+        
+        $roundData = Round::FindFirst(["id = {$round_id} AND session_id = {$session_id} "]);
+        $transactionData = Transaction::FindFirst(["id = {$transaction_id}"]);    
+
+        if(!($sessionData)){
+            $response->setError('Sesiunea nu exista ');
+        }else{
+            if((!($roundData)) || $roundData->getSessionid() != $session_id){
+                $response->setError('Runda nu exista nu exista/nu este atribuita sesiunii respective');
+                
+            }else
+                {
+                    if($roundData->getClosed() == 1 ){
+            
+                        $response->setError('Runda a fost inchisa');     
+                    }else{
+
+                        //logica tranzactie
+                        if((!($transactionData)) || $transactionData->getCancelled() == 1 )
+                        {
+
+                            $response->setError('Tranzactia nu exista');
+
+                        }else{
+                            //preluam datele userului
+                                $token = $sessionData->getTokenId();
+                                $tokenData = Tokens::FindFirst(["id = {$token}"]);
+                                $user_id = $tokenData->getUserId();
+                                $userData = Users::FindFirst(["id = {$user_id}"]);
+
+                                $userData->setBalance( $amount + $userData->getBalance()); 
+                                $userData->save();
+                                $roundData->setClosed(1);
+                                $roundData->save();
+                                $transactionData->setType("Win");
+                                $transactionData->save();
+                                var_dump($userData->getBalance());
+
+                        }
+                    }
+                }
+        }
+
+
+    }
+
+
+
+    public function cancelAction(){
+
+        $response = new App\Library\WalletResponse();
+        $action = json_decode($this->request->getRawBody(), true);
+        $session_id = $action['session_id'];
+        $round_id = $action['round_id'];
+        $transaction_id = $action['transaction_id'];
+
+        $sessionData = Sesiune::FindFirst(["id = {$session_id}"]);   
+        $roundData = Round::FindFirst(["id = {$round_id}"]);
+        $transactionData = Transaction::FindFirst(["id = {$transaction_id}"]);  
+
+        if(!($sessionData)){
+            $response->setError('Sesiunea nu exista ');
+        }
+        else
+        {
+            if(!($roundData || $roundData->getSessionid() != $session_id )){
+                $response->setError('Runda nu exista/nu este atribuita sesiunii respective');
+            }else
+            {
+                if(!($transactionData))
+                {
+
+                    $response->setError('Tranzactia nu exista');
+                }
+                else
+                {
+                        if($transactionData->getCancelled() == 1)
+                        {
+                            $response->setError('Tranzactie cancelled');
+                        }else
+                        {
+
+                                $roundData->setClosed(1);
+                                $roundData->setCancelled(1);
+                                $roundData->save();
+                                $transactionData->setType("Cancelled");
+                                $transactionData->setCancelled(1);
+                                $transactionData->save();
+
+                                //preluam datele userului
+                                $token = $sessionData->getTokenId();
+                                $tokenData = Tokens::FindFirst(["id = {$token}"]);
+                                $user_id = $tokenData->getUserId();
+                                $userData = Users::FindFirst(["id = {$user_id}"]);
+
+                                $userData->setBalance( $transactionData->getAmount() + $userData->getBalance()); 
+                                $userData->save();
+                                var_dump($userData->getBalance());
+                        }
+                }
+            }
+        }
+    }
+
+
+    public function endAction(){
+        $response = new App\Library\WalletResponse();
+        $action = json_decode($this->request->getRawBody(), true);
+        $session_id = $action['session_id'];
+
+        $sessionData = Sesiune::FindFirst(["id = {$session_id}"]);   
+
+        if(!($sessionData)){
+            $response->setError('Sesiunea nu exista ');
+        }
+        else
+        {
+            if($sessionData->getStatus() == 1)
+            {
+               
+                $sessionData->setStatus(0);
+                $sessionData->save();
+                $this->session->destroy();
+                $response->setError('Sesiune inchisa');
+            }else
+            {
+                $response->setError('Sesiune expirata');
+            }
+        }
+
+    }
+
 
 }
 
