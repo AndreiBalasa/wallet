@@ -69,6 +69,7 @@ class TestController extends ControllerBase
                      $token->setCurrDate( $CurrentDate->format('H:i:s'));
                      $token->setUserId($user_id);
                      $token->setGameId($game_id);
+                     $token->setUsed(0);
 
                      $token->save();
              }else {
@@ -84,10 +85,16 @@ class TestController extends ControllerBase
                    else
                    {
                     //tokenul e setata ca si available
-                    $tokenData->setUsed(0);
-                    $tokenData->save();
+                    
+                            if($tokenData->getUsed() == 1)
+                            {
+                                $response->setError('Token expirat');  
+                            }else
+                            {
+                                var_dump($tokenData->getToken());
+                            }
 
-                    var_dump($tokenData->getToken());
+                    
                    }
                    
 
@@ -105,77 +112,86 @@ class TestController extends ControllerBase
         $response = new App\Library\WalletResponse();
         $action = json_decode($this->request->getRawBody(), true);
         $user_id = $action['user_id'];
+        $Rawtoken = $action['token'];
        
-
+        
         $tokenData = Tokens::FindFirst(["user_id = {$user_id}"]);  // caut tokenul in functie de user_id
         
+
         
         if( !($tokenData) ){
             $response->setError('User-ul nu a fost gasit!');
         }else {
             $tokenId = $tokenData->getId();
-           
-           $sessionData = Sesiune::FindFirst(["token_id = {$tokenId}"]);     
-            
-
-            if( !($sessionData)){   ///daca sesiunea nu exista creeam una noua
-               if(($tokenData->getUsed() == 0)){  //daca tokenul este valid 
-                    $sesiune = new Sesiune();
-                    $timpul = new DateTime('Europe/Bucharest');
-
-                    $sesiune->setTokenId($tokenId);
-                    $sesiune->setStatus(1);
-                    $sesiune->setCurrDate( $timpul->format('H:i:s'));
-
-                    $sesiune->save();
-
-                    $tokenData->setUsed(1);
-                    $tokenData->save();
-
-                    //dupa ce salvez in database creez o sesiune cu datele respective
-                    $sessionData = Sesiune::FindFirst(["token_id = {$tokenId}"]);     
-
-                    $this->session->set('ID', $sessionData->getId());
-                    $this->session->set('Status', $sessionData->getStatus());
-                    $this->session->set('TokenId', $sessionData->getTokenId());
-
-                    var_dump("Sesion id:");
-                    var_dump($this->session->get('ID'));
-                    var_dump("Token id:");
-                    var_dump($this->session->get('TokenId'));
-               }else{
-                    $response->setError('Token Expirat');
-               }
-            }else
+            $tokenss = $tokenData->getToken();
+            if($Rawtoken == $tokenss)
             {
-                //sterg datele din sesiunea veche
-                $this->session->remove('ID');
-                $this->session->remove('Status');
-                $this->session->remove('TokenId');
 
-                //adaug datele sesiunii respective
-                if($sessionData->getStatus() == 1)
-                {
-                    
-                    $this->session->set('ID', $sessionData->getId());
-                    $this->session->set('Status', $sessionData->getStatus());
-                    $this->session->set('TokenId', $sessionData->getTokenId());
+            $sessionData = Sesiune::FindFirst(["token_id = {$tokenId}"]);     
+                
 
-                    var_dump("Sesion id:");
-                    var_dump($this->session->get('ID'));
-                    var_dump("Token id:");
-                    var_dump($this->session->get('TokenId'));
+                if( !($sessionData)){   ///daca sesiunea nu exista creeam una noua
+                if(($tokenData->getUsed() == 0)){  //daca tokenul este valid 
+                        $sesiune = new Sesiune();
+                        $timpul = new DateTime('Europe/Bucharest');
 
+                        $sesiune->setTokenId($tokenId);
+                        $sesiune->setStatus(1);
+                        $sesiune->setCurrDate( $timpul->format('H:i:s'));
+
+                        $sesiune->save();
+
+                        $tokenData->setUsed(1);
+                        $tokenData->save();
+
+                        //dupa ce salvez in database creez o sesiune cu datele respective
+                        $sessionData = Sesiune::FindFirst(["token_id = {$tokenId}"]);     
+
+                        $this->session->set('ID', $sessionData->getId());
+                        $this->session->set('Status', $sessionData->getStatus());
+                        $this->session->set('TokenId', $sessionData->getTokenId());
+
+                        var_dump("Sesion id:");
+                        var_dump($this->session->get('ID'));
+                        var_dump("Token id:");
+                        var_dump($this->session->get('TokenId'));
+                }else{
+                        $response->setError('Token Expirat');
+                }
                 }else
                 {
+                    //sterg datele din sesiunea veche
+                    $this->session->remove('ID');
+                    $this->session->remove('Status');
+                    $this->session->remove('TokenId');
 
-                    $response->setError('Sesiune expirata');
-                    $this->session->destroy();
+                    //adaug datele sesiunii respective
+                    if($sessionData->getStatus() == 1)
+                    {
+                        
+                        $this->session->set('ID', $sessionData->getId());
+                        $this->session->set('Status', $sessionData->getStatus());
+                        $this->session->set('TokenId', $sessionData->getTokenId());
+
+                        var_dump("Sesion id:");
+                        var_dump($this->session->get('ID'));
+                        var_dump("Token id:");
+                        var_dump($this->session->get('TokenId'));
+
+                    }else
+                    {
+
+                        $response->setError('Sesiune expirata');
+                        $this->session->destroy();
+                    }
+
                 }
-
+            }else
+            {
+                $response->setError('Token invalid');
             }
-
         }
+            
     
         $response->sendResponse();
 
@@ -186,17 +202,23 @@ class TestController extends ControllerBase
 
         $response = new App\Library\WalletResponse();
         $action = json_decode($this->request->getRawBody(), true);
-        $ballance_value = $action['balance'];
+        $session_id = $action['session_id'];
+        $user_idRaw = $action['user_id'];
         $sessionData = new Sesiune();
-        
+
+
+      
         try{
-            $sessionData = Sesiune::FindFirst(["id = {$this->session->get('ID')}"]);   
+            $sessionData = Sesiune::FindFirst(["id = {$session_id}"]);   
+            $tokenValid = $sessionData->getTokenId();
+            $tokenData = Tokens::FindFirst(["id = {$tokenValid}"]);
         }catch(\Exception $e){
-            var_dump("Sesiunea a fost distrusa");
+            $response->setError('Eroare la preluarea datelor');
+            $response->sendResponse();
         }
         
-
-        if(! ($sessionData) )
+       
+        if($sessionData->getStatus() == 0)
         {
 
             $response->setError('Sesiune expirata');
@@ -205,46 +227,53 @@ class TestController extends ControllerBase
         {
             if($sessionData->getStatus() == 1)
             {
-                $tokenData = Tokens::FindFirst(["id = {$this->session->get('TokenId')}"]);
+                
                 $user_id = $tokenData->getUserId();
                 $game_id = $tokenData->getGameId();
-                $userData = Users::FindFirst(["id = {$user_id}"]);
 
-                $gameData = Games::FindFirst(["id = {$game_id}"]);
+                if($user_id == $user_idRaw){
+                        $userData = Users::FindFirst(["id = {$user_id}"]);
 
-                    if($userData)
+                        $gameData = Games::FindFirst(["id = {$game_id}"]);
+
+                            if($userData)
+                            {
+                                if($gameData)
+                                {
+                                    
+                                    $this->session->set('Game', $gameData->getIdentifier());
+                                    $this->session->set('Balance', $userData->getBalance());
+
+                                    $Game = $this->session->get('Game');
+                                    $Balance = $this->session->get('Balance');
+
+                                    var_dump("Joc:");
+                                    var_dump($Game);
+                                    var_dump("Balanta:");
+                                    var_dump($Balance);
+
+                                  //  $sessionData->setStatus(0);
+                                 //    $sessionData->save();
+                                 //   $this->session->destroy();
+
+                                }else{
+
+                                    $response->setError('Game not found');
+                                }
+                                
+
+                            }else{
+                                $response->setError('User not found');
+                            }
+                        }else
+                            {
+                                $response->setError('Session/ID invalid');
+                            }
+
+                 }else
                     {
-                        if($gameData)
-                        {
-                            $userData->setBalance($ballance_value);
-                            $userData->save();
-                            $this->session->set('Game', $gameData->getIdentifier());
-                            $this->session->set('Balance', $userData->getBalance());
-
-                            $Game = $this->session->get('Game');
-                            $Balance = $this->session->get('Balance');
-
-                            var_dump($Game);
-                            var_dump($Balance);
-
-                            $sessionData->setStatus(0);
-                            $sessionData->save();
-                            $this->session->destroy();
-
-                        }else{
-
-                            $response->setError('Game not found');
-                        }
-                        
-
-                    }else{
-                        $response->setError('User not found');
+                        $response->setError('Sesiune expirata');
                     }
-
-            }else
-            {
-                $response->setError('Sesiune expirata');
-            }
             
 
         }
@@ -254,6 +283,109 @@ class TestController extends ControllerBase
     }
 
     
+
+    public function betAction()
+    {
+        $response = new App\Library\WalletResponse();
+        $action = json_decode($this->request->getRawBody(), true);
+        $session_id = $action['session_id'];
+        $round_id = $action['round_id'];
+        $transaction_id = $action['transaction_id'];
+        $amount = $action['amount'];
+        //date din postman
+
+        //date din database
+        $sessionData = Sesiune::FindFirst(["id = {$session_id}"]);   
+        
+        $roundData = Round::FindFirst(["id = {$round_id}"]);
+        $transactionData = Transaction::FindFirst(["id = {$transaction_id}"]);      
+        
+
+        if(!($sessionData)){
+            $response->setError('Invalid session');
+        }else
+            {
+            if($sessionData->getStatus() == 1)
+            {
+                if(($roundData) && ($transactionData))
+                {
+                    //preluam datele userului 
+                    $token = $sessionData->getTokenId();
+                    $tokenData = Tokens::FindFirst(["id = {$token}"]);
+                    $user_id = $tokenData->getUserId();
+                    $userData = Users::FindFirst(["id = {$user_id}"]);
+
+
+                    if($amount > $userData->getBalance()){
+
+                        $response->setError('Insuficiend founds');
+
+                    }else
+                    {   
+                        //verific daca transactia din database corespunde cu datele din postman
+                        if($amount != $transactionData->getAmount() || $transaction_id != $transactionData->getId() || $transactionData->getCancelled() == 1 ) 
+                        {
+                            $response->setError('Invalid transaction');
+                        }else
+                        {   
+                            //verific daca runda din database corespunde cu datele din postman
+                            if($round_id == $roundData->getId() ||  $session_id == $roundData->getSessionid())
+                            {          
+                                $suma = $userData->getBalance() - $amount;
+                                $userData->setBalance($suma);
+                                $userData->save();
+                                var_dump($userData->getBalance());
+                                }else
+                                {
+                                    $response->setError('Invalid round');
+                                }
+                            }
+                    }
+                    
+
+                }else
+                {
+                    // setam round si transaction
+                    var_dump("Round and Transaction created");  
+                    $round = new Round();
+                    $transaction= new Transaction();
+
+                    //date pentru runda
+                    if(!($roundData)){
+                        $dateTime =new DateTime('Europe/Bucharest');
+                        $round->setDate($dateTime->format('H:i:s'));
+                        $round->setId($round_id);
+                        $round->setClosed(0);
+                        $round->setCancelled(0);
+                        $round->setSession($sessionData->getId());
+                        $round->save();
+                    }
+
+                    
+                    //date pentru transaction
+                    if(!($transactionData)){
+                        
+                        $dateTimetr =new DateTime('Europe/Bucharest');
+                        $transaction->setDate($dateTimetr->format('H:i:s'));
+                        $transaction->setAmount($amount);
+                        $transaction->setCancelled(0);
+                        $transaction->save();
+                    }
+
+                }
+
+            }else
+            {
+                $response->setError('Sesiune expirata');
+            }
+        }
+
+
+
+    }
+
+
+
 
 }
 

@@ -10,13 +10,11 @@ use Phalcon\Flash\Direct as FlashDirect;
 
 class SignupController extends Controller
 {
+
     public function indexAction()
     {
-    
         
-
     }
-
 
       public function registerAction()
     {
@@ -40,13 +38,15 @@ class SignupController extends Controller
                 [
                 "name" =>$name,
                 "email"=>$email,
-                "password"=>$this->security->hash($password)
+                "password"=>$this->security->hash($password),
+                "balance" => 100
                  ],
                 [
                 "name",
                 "email",
-                 "password"
-                 ]
+                 "password",
+                 "balance"
+                ]
             );
 
            // $user->password = $this->security->hash($password);

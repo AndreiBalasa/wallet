@@ -47,6 +47,7 @@ http://wallet.local:8080/test/balance
 In Data: 
 {
     "session_id":1,
+    "user_id": 1
 }
 Out Data:
 On success:
@@ -68,3 +69,117 @@ Users -> id, username, balance
 Games -> id, identifier ("fire-jocker")
 Tokens -> id, user_id, game_id, creation_date, use_date, used (0|1) available 5 minutes
 Sessions -> id, token_id, creation_date, status (0 active|1 closed)
+
+
+Endpoint:
+http://wallet.local:8080/test/bet
+In Data: 
+{
+    "session_id":1,
+    "round_id": 1,
+    "transaction_id": 1,
+    "amount" : 10
+}
+Out Data:
+On success:
+{
+    "success": 1,
+    "balance": 90,
+}
+On fail:
+{
+    "success": 0,
+    "message": "De ce a crapat"
+}
+Process:
+- Verifici sesiunea daca este activa, verifici daca exista runda, verifici daca exista tranzactia.
+- verifici daca jucatorul are bani suficienti in balanta, daca nu eroare si nu se scade nimic din balanta
+Daca totul e ok scazi din balanta curenta amount-ul si returnezi noua balanta 
+Altfel eroare
+
+
+
+Endpoint:
+http://wallet.local:8080/test/win
+In Data: 
+{
+    "session_id":1,
+    "round_id": 1,
+    "transaction_id": 1,
+    "amount" : 11
+}
+Out Data:
+On success:
+{
+    "success": 1,
+    "balance": 101,
+}
+On fail:
+{
+    "success": 0,
+    "message": "De ce a crapat"
+}
+Process:
+- nu conteaza daca sesiunea este inca deschisa, conteaza doar sa existe
+- verifica daca exista runda, runda este creeata de catre actiunea bet
+- verifica daca exista tranzactia
+- operatiunea de win inchide runda
+Dca totul e ok adaugam amount-ul la balanta jucatorului si returnam noua balanta
+Altfel eroare
+
+
+Endpoint:
+http://wallet.local:8080/test/cancel
+In Data: 
+{
+    "session_id":1,
+    "round_id": 1,
+    "transaction_id": 1
+}
+Out Data:
+On success:
+{
+    "success": 1,
+    "balance": 100,
+}
+On fail:
+{
+    "success": 0,
+    "message": "De ce a crapat"
+}
+Process:
+- nu conteza daca sesiunea este inca deschisa, doar sa existe
+- verifici daca exista runda 
+- verifici daca exista tranzactia (bet)
+- operatiunea de cancel inchide runda
+- mark round as cancelled
+Daca totul este ok, tranzactia de tip bet este marcata ca cancelled si valoarea care a fost scazuta din balanta jucatorului sa fie returnata
+Altfel eroare
+
+- Round -> este creeata de catre un bet si inchisa de catre win
+- Transaction -> este operatiunea unica de modifiare a blantei, nu pot exista 2 tranzactii cu acelasi id altfel trebuie returnat duplicate transaction_id
+
+Trasaction: id, type, amount, date_time, cancelled
+Round: id, date_time, closed, cancelled
+
+
+Endpoint:
+http://wallet.local:8080/test/end
+In Data: 
+{
+    "session_id":1
+}
+Out Data:
+On success:
+{
+    "success": 1
+}
+On fail:
+{
+    "success": 0,
+    "message": "De ce a crapat"
+}
+Process:
+- verifici daca sesiunea exista si este deschisa
+Daca da inchide sesiunea
+Altfel eroare
