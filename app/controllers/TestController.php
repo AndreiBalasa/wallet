@@ -297,7 +297,7 @@ class TestController extends ControllerBase
         //date din database
         $sessionData = Sesiune::FindFirst(["id = {$session_id}"]);   
         
-        $roundData = Round::FindFirst(["id = {$round_id}"]);
+        $roundData = Round::FindFirst(["id = {$round_id} AND session_id = {$session_id} "]);
         $transactionData = Transaction::FindFirst(["id = {$transaction_id}"]);      
         
 
@@ -334,6 +334,7 @@ class TestController extends ControllerBase
                                 $suma = $userData->getBalance() - $amount;
                                 $userData->setBalance($suma);
                                 $userData->save();
+                                var_dump("Balance:");
                                 var_dump($userData->getBalance());
                                 }else
                                 {
@@ -432,6 +433,7 @@ class TestController extends ControllerBase
                                 $roundData->save();
                                 $transactionData->setType("Win");
                                 $transactionData->save();
+                                var_dump("Balance:");
                                 var_dump($userData->getBalance());
 
                         }
@@ -493,6 +495,7 @@ class TestController extends ControllerBase
 
                                 $userData->setBalance( $transactionData->getAmount() + $userData->getBalance()); 
                                 $userData->save();
+                                var_dump("Balance:");
                                 var_dump($userData->getBalance());
                         }
                 }
