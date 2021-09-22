@@ -479,7 +479,11 @@ class TestController extends ControllerBase
                             $response->setError('Tranzactie cancelled');
                         }else
                         {
-
+                            if($transactionData->getType() == "Win")
+                            {
+                                $response->setError('Tranzactie folosita deja in win Action');
+                            }else
+                            {
                                 $roundData->setClosed(1);
                                 $roundData->setCancelled(1);
                                 $roundData->save();
@@ -497,6 +501,7 @@ class TestController extends ControllerBase
                                 $userData->save();
                                 var_dump("Balance:");
                                 var_dump($userData->getBalance());
+                            }
                         }
                 }
             }
