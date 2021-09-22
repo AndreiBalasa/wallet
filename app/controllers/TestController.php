@@ -455,7 +455,7 @@ class TestController extends ControllerBase
         $transaction_id = $action['transaction_id'];
 
         $sessionData = Sesiune::FindFirst(["id = {$session_id}"]);   
-        $roundData = Round::FindFirst(["id = {$round_id}"]);
+        $roundData = Round::FindFirst(["id = {$round_id} AND session_id = {$session_id}"]);
         $transactionData = Transaction::FindFirst(["id = {$transaction_id}"]);  
 
         if(!($sessionData)){
