@@ -3,12 +3,12 @@
     "",
     "\\app",
     "\\app\\controllers",
-    "\\app\\library",
     "\\app\\models",
     "\\app\\views",
     "\\app\\views\\user",
     "\\cache",
     "\\public"
   ],
+  "SelectedNode": "\\app\\library",
   "PreviewInSolutionExplorer": false
 }

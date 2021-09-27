@@ -117,8 +117,7 @@ class TestController extends ControllerBase
         
         $tokenData = Tokens::FindFirst(["user_id = {$user_id}"]);  // caut tokenul in functie de user_id
         
-
-        
+    
         if( !($tokenData) ){
             $response->setError('User-ul nu a fost gasit!');
         }else {
@@ -251,9 +250,9 @@ class TestController extends ControllerBase
                                     var_dump($Game);
                                     var_dump("Balanta:");
                                     var_dump($Balance);
-
+                                  
                                   //  $sessionData->setStatus(0);
-                                 //    $sessionData->save();
+                                 //   $sessionData->save();
                                  //   $this->session->destroy();
 
                                 }else{
@@ -294,6 +293,45 @@ class TestController extends ControllerBase
         $amount = $action['amount'];
         //date din postman
 
+        $sessionData = Sesiune::FindFirst(["id = {$session_id}"]);
+        $token = $sessionData->getTokenId();
+        $tokenData = Tokens::FindFirst(["id = {$token}"]);
+        $user_id = $tokenData->getUserId();
+
+
+        $db = $this->di->getShared('db');
+
+        $sql = "CALL `testdatabase`.`bet`(:in_amount, :in_player_id, :in_transaction_id, :in_round_id, :in_session_id)";
+
+        $args = [
+            "in_amount" => $amount,
+            "in_player_id" => $user_id,
+            "in_transaction_id" => $transaction_id,
+            "in_round_id" => $round_id,
+            "in_session_id" => $session_id,
+        ];
+
+        $statement = $db->prepare($sql);
+
+        $result = $db->executePrepared($statement, $args, []);
+
+        $res = $result->fetch(2);
+
+        $result->closeCursor();
+
+        if(empty($res) || $res['success'] === '0'){
+            $response->setError($res['error_msg'] ?? "Unexpected error");
+        }else{
+            $response->setData([
+                'balance' => $res['balance']
+            ]);
+        }
+
+        $response->sendResponse();
+
+
+        /*
+        OLD
         //date din database
         $sessionData = Sesiune::FindFirst(["id = {$session_id}"]);   
         
@@ -323,7 +361,7 @@ class TestController extends ControllerBase
                     }else
                     {   
                         //verific daca transactia din database corespunde cu datele din postman
-                        if($amount != $transactionData->getAmount() || $transaction_id != $transactionData->getId() || $transactionData->getCancelled() == 1 ) 
+                        if($amount != $transactionData->getAmount() || $transaction_id != $transactionData->getId() || $transactionData->getCancelled() == 1 || $transactionData->getType() != null ) 
                         {
                             $response->setError('Invalid transaction');
                         }else
@@ -380,7 +418,7 @@ class TestController extends ControllerBase
                 $response->setError('Sesiune expirata');
             }
         }
-
+        */
 
 
     }
