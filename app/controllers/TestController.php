@@ -282,7 +282,13 @@ class TestController extends ControllerBase
     }
 
     
-
+    /**
+     * fjdsflsdlfdsssdasd
+     * d
+     * asdas
+     * das
+     * 
+     */
     public function betAction()
     {
         $response = new App\Library\WalletResponse();
@@ -292,43 +298,51 @@ class TestController extends ControllerBase
         $transaction_id = $action['transaction_id'];
         $amount = $action['amount'];
         //date din postman
-
         $sessionData = Sesiune::FindFirst(["id = {$session_id}"]);
-        $token = $sessionData->getTokenId();
-        $tokenData = Tokens::FindFirst(["id = {$token}"]);
-        $user_id = $tokenData->getUserId();
+  
+        if($sessionData)
+        {
+            $token = $sessionData->getTokenId();
+            $tokenData = Tokens::FindFirst(["id = {$token}"]);
+            $user_id = $tokenData->getUserId();
+        
 
 
-        $db = $this->di->getShared('db');
+            $db = $this->di->getShared('db');
 
-        $sql = "CALL `testdatabase`.`bet`(:in_amount, :in_player_id, :in_transaction_id, :in_round_id, :in_session_id)";
+            $sql = "CALL `testdatabase`.`bet`(:in_amount, :in_player_id, :in_transaction_id, :in_round_id, :in_session_id)";
 
-        $args = [
-            "in_amount" => $amount,
-            "in_player_id" => $user_id,
-            "in_transaction_id" => $transaction_id,
-            "in_round_id" => $round_id,
-            "in_session_id" => $session_id,
-        ];
+            $args = [
+                "in_amount" => $amount,
+                "in_player_id" => $user_id,
+                "in_transaction_id" => $transaction_id,
+                "in_round_id" => $round_id,
+                "in_session_id" => $session_id,
+            ];
 
-        $statement = $db->prepare($sql);
+            $statement = $db->prepare($sql);
 
-        $result = $db->executePrepared($statement, $args, []);
+            $result = $db->executePrepared($statement, $args, []);
 
-        $res = $result->fetch(2);
+            $res = $result->fetch(2);
 
-        $result->closeCursor();
+            $result->closeCursor();
 
-        if(empty($res) || $res['success'] === '0'){
-            $response->setError($res['error_msg'] ?? "Unexpected error");
-        }else{
-            $response->setData([
-                'balance' => $res['balance']
-            ]);
+            if(empty($res) || $res['success'] === '0'){
+                $response->setError($res['error_msg'] ?? "Unexpected error");
+            }else{
+                $response->setData([
+                    'balance' => $res['balance']
+                ]);
+            }
+
+            $response->sendResponse();
+
+    }else
+        {
+            $response->setError('Sesiune invalida'); 
+            $response->sendResponse();
         }
-
-        $response->sendResponse();
-
 
         /*
         OLD
@@ -421,6 +435,8 @@ class TestController extends ControllerBase
         */
 
 
+        
+
     }
 
 
@@ -436,9 +452,55 @@ class TestController extends ControllerBase
 
         $sessionData = Sesiune::FindFirst(["id = {$session_id}"]);   
         
-        $roundData = Round::FindFirst(["id = {$round_id} AND session_id = {$session_id} "]);
-        $transactionData = Transaction::FindFirst(["id = {$transaction_id}"]);    
+        //$roundData = Round::FindFirst(["id = {$round_id} AND session_id = {$session_id} "]);
+       // $transactionData = Transaction::FindFirst(["id = {$transaction_id}"]);    
+       if($sessionData)
+       {
 
+            $token = $sessionData->getTokenId();
+            $tokenData = Tokens::FindFirst(["id = {$token}"]);
+            $user_id = $tokenData->getUserId();
+
+
+            $db = $this->di->getShared('db');
+
+            $sql = "CALL `testdatabase`.`win`(:in_amount,:in_transaction_id, :in_round_id,:in_player_id, :in_session_id)";
+
+            $args = [
+                "in_amount" => $amount,
+                "in_transaction_id" => $transaction_id,
+                "in_round_id" => $round_id,
+                "in_player_id" => $user_id,
+                "in_session_id" => $session_id,
+            ];
+
+            $statement = $db->prepare($sql);
+
+            $result = $db->executePrepared($statement, $args, []);
+
+            $res = $result->fetch(2);
+
+            $result->closeCursor();
+
+            if(empty($res) || $res['success'] === '0'){
+                $response->setError($res['error_msg'] ?? "Unexpected error");
+            }else{
+                $response->setData([
+                    'balance' => $res['balance']
+                ]);
+            }
+
+            $response->sendResponse();
+    }else
+    {
+        $response->setError('Sesiune invalida'); 
+        $response->sendResponse();
+    }
+
+
+
+         /*
+        OLD
         if(!($sessionData)){
             $response->setError('Sesiunea nu exista ');
         }else{
@@ -479,6 +541,7 @@ class TestController extends ControllerBase
                 }
         }
 
+        */
 
     }
 
@@ -496,6 +559,53 @@ class TestController extends ControllerBase
         $roundData = Round::FindFirst(["id = {$round_id} AND session_id = {$session_id}"]);
         $transactionData = Transaction::FindFirst(["id = {$transaction_id}"]);  
 
+
+        if($sessionData)
+        {
+ 
+             $token = $sessionData->getTokenId();
+             $tokenData = Tokens::FindFirst(["id = {$token}"]);
+             $user_id = $tokenData->getUserId();
+ 
+ 
+             $db = $this->di->getShared('db');
+ 
+             $sql = "CALL `testdatabase`.`cancel`(:in_player_id,:in_transaction_id, :in_round_id,:in_session_id)";
+ 
+             $args = [
+                 "in_transaction_id" => $transaction_id,
+                 "in_round_id" => $round_id,
+                 "in_player_id" => $user_id,
+                 "in_session_id" => $session_id,
+             ];
+ 
+             $statement = $db->prepare($sql);
+ 
+             $result = $db->executePrepared($statement, $args, []);
+ 
+             $res = $result->fetch(2);
+ 
+             $result->closeCursor();
+ 
+             if(empty($res) || $res['success'] === '0'){
+                 $response->setError($res['error_msg'] ?? "Unexpected error");
+             }else{
+                 $response->setData([
+                     'balance' => $res['balance']
+                 ]);
+             }
+ 
+             $response->sendResponse();
+     }else
+     {
+         $response->setError('Sesiune invalida'); 
+         $response->sendResponse();
+     }
+
+
+
+           /*
+        OLD
         if(!($sessionData)){
             $response->setError('Sesiunea nu exista ');
         }
@@ -544,6 +654,8 @@ class TestController extends ControllerBase
                 }
             }
         }
+
+        */
     }
 
 
